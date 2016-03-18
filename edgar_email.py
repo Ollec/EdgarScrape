@@ -64,7 +64,8 @@ def email(tradingSymbol, link):
     smtpObj.login('***********************@gmail.com', '**********')
     print(smtpObj.sendmail('***************@gmail.com',\
                      '***************@gmail.com',\
-                     'Subject: ' + str(today) + ' | Stock order: ' + str(tradingSymbol) + '.\nBuy this stock and heres the address + ' + str(link) + '\n'))
+                     'Subject: ' + str(today) + ' | Stock order: ' + str(tradingSymbol) +\
+                           '.\nBuy this stock and heres the address + ' + str(link) + '\n'))
     smtpObj.quit()
 
 def text_phone(tradingSymbol):
@@ -73,7 +74,8 @@ def text_phone(tradingSymbol):
     twilioCli = TwilioRestClient(accountSID, authToken)
     myTwilioNumber = '**************'
     myCellPhone = '*****************'
-    message = twilioCli.messages.create(body='Yo, buy this stock: ' + str(tradingSymbol), from_=myTwilioNumber, to=myCellPhone)
+    message = twilioCli.messages.create(body='Yo, buy this stock: ' + str(tradingSymbol), \
+                                        from_=myTwilioNumber, to=myCellPhone)
 
 
 #----------------------------------------------------------------------------------#
@@ -88,7 +90,8 @@ def scrape_xml(link):
     today = today.strftime('%m/%d/%Y %I:%M %p')
 
     headers = {
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.103 Safari/537.36",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 \
+    (KHTML, like Gecko) Chrome/48.0.2564.103 Safari/537.36",
     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     "accept-charset": "ISO-8859-1,utf-8;q=0.7,*;q=0.3",
     "accept-encoding": "gzip, deflate, sdch",
@@ -106,20 +109,25 @@ def scrape_xml(link):
                 isOfficer = tree.find('reportingOwner/reportingOwnerRelationship/isOfficer')
                 if isOfficer == None:
                     isOfficer = ''
-                transactionCode = tree.findall('nonDerivativeTable/nonDerivativeTransaction/transactionCoding/transactionCode')
+                transactionCode = tree.findall('nonDerivativeTable/nonDerivativeTransaction/\
+                transactionCoding/transactionCode')
                 if transactionCode == None:
                     transactionCode = []
                 tradingSymbol = tree.find('issuer/issuerTradingSymbol')
-                transactionShares = tree.findall('nonDerivativeTable/nonDerivativeTransaction/transactionAmounts/transactionShares/value')
+                transactionShares = tree.findall('nonDerivativeTable/nonDerivativeTransaction/\
+                transactionAmounts/transactionShares/value')
                 if transactionShares == None:
                     transactionShares = []
-                transactionPricePerShare = tree.findall('nonDerivativeTable/nonDerivativeTransaction/transactionAmounts/transactionPricePerShare/value')
+                transactionPricePerShare = tree.findall('nonDerivativeTable/nonDerivativeTransaction/\
+                transactionAmounts/transactionPricePerShare/value')
                 if transactionShares == None:
                     transactionShares = []
-                DorI = tree.findall('nonDerivativeTable/nonDerivativeTransaction/ownershipNature/directOrIndirectOwnership/value')
+                DorI = tree.findall('nonDerivativeTable/nonDerivativeTransaction/ownershipNature/\
+                directOrIndirectOwnership/value')
                 if DorI == None:
                     DorI = []
-                for price, shares, direct, code in zip(transactionPricePerShare, transactionShares, DorI, transactionCode):
+                for price, shares, direct, code in zip(transactionPricePerShare, transactionShares, \
+                                                       DorI, transactionCode):
                     if direct.text == 'D' and code.text == 'P':
                         TotalValue = TotalValue + float(shares.text)*float(price.text)
                 for code in transactionCode:
@@ -132,7 +140,8 @@ def scrape_xml(link):
                 print (DorIList)
                 print (tradingSymbol.text)  
                 if isOfficer != None:
-                    if isOfficer.text == str(1) and 'P' in transactionCodeList and TotalValue > 10000 and 'D' in DorIList and tradingSymbol.text not in portfolio:
+                    if isOfficer.text == str(1) and 'P' in transactionCodeList and TotalValue > 10000 and \
+                       'D' in DorIList and tradingSymbol.text not in portfolio:
                         print ('Stock found.')
                         print (today)
                         print (tradingSymbol.text)
@@ -167,9 +176,9 @@ def edgar_feed(url):
             company_name = company_name[0]
             if company_name in lower and d.entries[entry].title[0:1:] == '4':
                 link = d.entries[entry].link
-                stocks_sent.append(link)
                 if link not in stocks_sent:
                     scrape_xml(link)
+                    stocks_sent.append(link)
             else:
                 pass
     except Exception as e:
@@ -196,7 +205,8 @@ def check_price():
             smtpObj.login('**************@gmail.com', 'password')
             print(smtpObj.sendmail('*****************@gmail.com',\
                              '*********************@gmail.com',\
-                             'Subject: ' + str(today) + ' | Stock to sell after 2% gains: ' + str(ticker) + '.\nSell this stock' + '\n'))
+                             'Subject: ' + str(today) + ' | Stock to sell after 2% gains: '\
+                                   + str(ticker) + '.\nSell this stock' + '\n'))
             smtpObj.quit()
             #Text me
             accountSID = '*******************************'
@@ -204,7 +214,8 @@ def check_price():
             twilioCli = TwilioRestClient(accountSID, authToken)
             myTwilioNumber = '***************'
             myCellPhone = '**************'
-            message = twilioCli.messages.create(body='Yo, sell this stock (2% gain): ' + str(ticker), from_=myTwilioNumber, to=myCellPhone)
+            message = twilioCli.messages.create(body='Yo, sell this stock (2% gain): '\
+                                                + str(ticker), from_=myTwilioNumber, to=myCellPhone)
             portfolio.remove(stock)
             bought_price.remove(price)
             checked.append(stock)
@@ -235,7 +246,8 @@ def check_price():
             smtpObj.login('*****************@gmail.com', '*****************')
             print(smtpObj.sendmail('***********@gmail.com',\
                              '**************@gmail.com',\
-                             'Subject: ' + str(today) + ' | Stock to sell after 5% losses: ' + str(ticker) + '.\nSell this stock' + '\n'))
+                             'Subject: ' + str(today) + ' | Stock to sell after 5% losses: '\
+                                   + str(ticker) + '.\nSell this stock' + '\n'))
             smtpObj.quit()
         #Text me
             accountSID = '**********************'
@@ -243,7 +255,8 @@ def check_price():
             twilioCli = TwilioRestClient(accountSID, authToken)
             myTwilioNumber = '+13607270127'
             myCellPhone = '+13605626329'
-            message = twilioCli.messages.create(body='Yo, sell this stock (5% losses): ' + str(ticker), from_=myTwilioNumber, to=myCellPhone)
+            message = twilioCli.messages.create(body='Yo, sell this stock (5% losses): '\
+                                                + str(ticker), from_=myTwilioNumber, to=myCellPhone)
         #Remove from portfolio
             portfolio.remove(stock)
             bought_price.remove(price)
@@ -272,7 +285,8 @@ def check_price():
 #SCRIPT BODY
 
 #Has a "while True" to make sure both functions (edgar_feed and check_price) run constantly    
-url = 'http://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=&company=&dateb=&owner=only&start=0&count=100&output=atom'
+url = 'http://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=&company=&dateb=\
+&owner=only&start=0&count=100&output=atom'
 print ('monitoring feed...')
 run_counter = 0
 def job():
