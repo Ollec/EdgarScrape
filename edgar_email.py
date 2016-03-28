@@ -59,34 +59,34 @@ def email(tradingSymbol, link):
     smtpObj = smtplib.SMTP('smtp.gmail.com', 587)
     smtpObj.ehlo()
     smtpObj.starttls()
-    smtpObj.login('*************@gmail.com', '************')
-    print(smtpObj.sendmail('************@gmail.com',\
-                     '************@gmail.com',\
+    smtpObj.login('***********@gmail.com', '***********')
+    print(smtpObj.sendmail('***********@gmail.com',\
+                     '***********@gmail.com',\
                      'Subject: ' + str(today) + ' | Stock order: ' + str(tradingSymbol) + '.\nBuy this stock and heres the address + ' + str(link) + '\n'))
     smtpObj.quit()
 
 def text_phone(tradingSymbol):
-    accountSID = '************'
-    authToken = '************'
+    accountSID = '***********'
+    authToken = '***********'
     twilioCli = TwilioRestClient(accountSID, authToken)
-    myTwilioNumber = '************'
-    myCellPhone = '************'
+    myTwilioNumber = '***********'
+    myCellPhone = '***********'
     message = twilioCli.messages.create(body='Yo, buy this stock: ' + str(tradingSymbol), from_=myTwilioNumber, to=myCellPhone)
 
 def text_error(link):
-    accountSID = '************'
-    authToken = '************'
+    accountSID = '***********'
+    authToken = '***********'
     twilioCli = TwilioRestClient(accountSID, authToken)
-    myTwilioNumber = '************'
-    myCellPhone = '************'
+    myTwilioNumber = '***********'
+    myCellPhone = '***********'
     message = twilioCli.messages.create(body='There was an error on Python at this address: ' + str(link), from_=myTwilioNumber, to=myCellPhone)
 
 def text_scott(tradingSymbol):
-    accountSID = '************'
-    authToken = '************'
+    accountSID = '***********'
+    authToken = '***********'
     twilioCli = TwilioRestClient(accountSID, authToken)
-    myTwilioNumber = '************'
-    myCellPhone = '************'
+    myTwilioNumber = '***********'
+    myCellPhone = '***********'
     message = twilioCli.messages.create(body='Yo, buy this stock: ' + str(tradingSymbol), from_=myTwilioNumber, to=myCellPhone) 
 
 
@@ -110,90 +110,90 @@ def scrape_xml(link):
     }
     res = requests.get(link, headers=headers)
     soup = bs4.BeautifulSoup(res.text, 'html.parser')
-    try:
-        for a in soup.find_all('a'):
-            if 'Archives' in a['href'] and 'xml' in a.getText():
-                address = 'http://www.sec.gov' + a['href']
-                print ('Scraping XML on ' + str(today) + ' at ' + str(link))
-                res = requests.get(address, headers=headers)
-                time.sleep(2)
-                tree = ET.fromstring(res.text)
-                if tree.find('reportingOwner/reportingOwnerRelationship/isOfficer') != None:
-                    isOfficer = tree.find('reportingOwner/reportingOwnerRelationship/isOfficer')
-                    isOfficer = isOfficer.text
+    #try:
+    for a in soup.find_all('a'):
+        if a.getText()[-4:] == '.xml':
+            address = 'http://www.sec.gov' + a['href']
+            print ('Scraping XML on ' + str(today) + ' at ' + str(link))
+            res = requests.get(address, headers=headers)
+            time.sleep(2)
+            tree = ET.fromstring(res.text)
+            if tree.find('reportingOwner/reportingOwnerRelationship/isOfficer') != None:
+                isOfficer = tree.find('reportingOwner/reportingOwnerRelationship/isOfficer')
+                isOfficer = isOfficer.text
+            else:
+                isOfficer = ''
+            transactionCode = tree.findall('nonDerivativeTable/nonDerivativeTransaction/transactionCoding/transactionCode')
+            if transactionCode == None:
+                transactionCode = []
+            tradingSymbol = tree.find('issuer/issuerTradingSymbol')
+            transactionShares = tree.findall('nonDerivativeTable/nonDerivativeTransaction/transactionAmounts/transactionShares/value')
+            if transactionShares == None:
+                transactionShares = []
+            transactionPricePerShare = tree.findall('nonDerivativeTable/nonDerivativeTransaction/transactionAmounts/transactionPricePerShare/value')
+            if transactionShares == None:
+                transactionShares = []
+            DorI = tree.findall('nonDerivativeTable/nonDerivativeTransaction/ownershipNature/directOrIndirectOwnership/value')
+            if DorI == None:
+                DorI = []
+            for price, shares, direct, code in zip(transactionPricePerShare, transactionShares, DorI, transactionCode):
+                if direct.text == 'D' and code.text == 'P':
+                    TotalValue = TotalValue + float(shares.text)*float(price.text)
                 else:
-                    isOfficer = ''
-                transactionCode = tree.findall('nonDerivativeTable/nonDerivativeTransaction/transactionCoding/transactionCode')
-                if transactionCode == None:
-                    transactionCode = []
-                tradingSymbol = tree.find('issuer/issuerTradingSymbol')
-                transactionShares = tree.findall('nonDerivativeTable/nonDerivativeTransaction/transactionAmounts/transactionShares/value')
-                if transactionShares == None:
-                    transactionShares = []
-                transactionPricePerShare = tree.findall('nonDerivativeTable/nonDerivativeTransaction/transactionAmounts/transactionPricePerShare/value')
-                if transactionShares == None:
-                    transactionShares = []
-                DorI = tree.findall('nonDerivativeTable/nonDerivativeTransaction/ownershipNature/directOrIndirectOwnership/value')
-                if DorI == None:
-                    DorI = []
-                for price, shares, direct, code in zip(transactionPricePerShare, transactionShares, DorI, transactionCode):
-                    if direct.text == 'D' and code.text == 'P':
-                        TotalValue = TotalValue + float(shares.text)*float(price.text)
-                    else:
-                        pass
-                for code in transactionCode:
-                    transactionCodeList.append(code.text)
-                for item in DorI:
-                    DorIList.append(item.text)
-                print (isOfficer)
-                print(transactionCodeList)
-                print (TotalValue)
-                print (DorIList) 
-                if isOfficer == str(1) and 'P' in transactionCodeList and TotalValue > 10000 and 'D' in DorIList and tradingSymbol.text not in portfolio:
-                    print ('Stock found.')
-                    print (today)
-                    print (tradingSymbol.text)
-                    with open('portfolio.txt', 'a') as f:
-                        f.write(tradingSymbol.text + '\n')
-                    ticker = tradingSymbol.text.lower()
-                    res = requests.get('http://finance.yahoo.com/q?s=' + ticker)
-                    soup = bs4.BeautifulSoup(res.text, 'html.parser')
-                    elems = soup.select('#yfs_l84_'+str(ticker))
-                    current_price = elems[0].getText()
-                    with open('bought_price.txt', 'a') as f:
-                        f.write(current_price + '\n')
-                    email (tradingSymbol.text, link)
-                    text_phone (tradingSymbol.text)
-                    text_scott (tradingSymbol.text)
-                    print ('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    except Exception as e:
-        print (address)
-        print (e)
-        print (datetime.datetime.today())
-        text_error(link)
-        pass
+                    pass
+            for code in transactionCode:
+                transactionCodeList.append(code.text)
+            for item in DorI:
+                DorIList.append(item.text)
+            print (isOfficer)
+            print(transactionCodeList)
+            print (TotalValue)
+            print (DorIList) 
+            if isOfficer == str(1) and 'P' in transactionCodeList and TotalValue > 10000 and 'D' in DorIList and tradingSymbol.text not in portfolio:
+                print ('Stock found.')
+                print (today)
+                print (tradingSymbol.text)
+                with open('portfolio.txt', 'a') as f:
+                    f.write(tradingSymbol.text + '\n')
+                ticker = tradingSymbol.text.lower()
+                res = requests.get('http://finance.yahoo.com/q?s=' + ticker)
+                soup = bs4.BeautifulSoup(res.text, 'html.parser')
+                elems = soup.select('#yfs_l84_'+str(ticker))
+                current_price = elems[0].getText()
+                with open('bought_price.txt', 'a') as f:
+                    f.write(current_price + '\n')
+                email (tradingSymbol.text, link)
+                text_phone (tradingSymbol.text)
+                text_scott (tradingSymbol.text)
+                print ('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+##    except Exception as e:
+##        print (address)
+##        print (e)
+##        print (datetime.datetime.today())
+##        text_error(link)
+##        pass
 
 def edgar_feed(url):
-    try:
-        d = feedparser.parse(url)
-        #d = feedparser.parse(r'feed_example.txt')
-        lower = [x.lower() for x in CompanyNameList]
-        for entry in range(0,99):
-            company_name = d.entries[entry].title.lower()
-            company_name = company_name.split('- ')
-            company_name = company_name[1].split(' (')
-            company_name = company_name[0]
-            if company_name in lower and d.entries[entry].title[0:1:] == '4':
-                link = d.entries[entry].link
-                if link not in stocks_sent:
-                    scrape_xml(link)
-                    stocks_sent.append(link)
-            else:
-                pass
-    except Exception as e:
-        print (e)
-        print (datetime.datetime.today())
-        pass
+    #try:
+    d = feedparser.parse(url)
+    #d = feedparser.parse(r'feed_example.txt')
+    lower = [x.lower() for x in CompanyNameList]
+    for entry in range(0,99):
+        company_name = d.entries[entry].title.lower()
+        company_name = company_name.split('- ')
+        company_name = company_name[1].split(' (')
+        company_name = company_name[0]
+        if company_name in lower and d.entries[entry].title[0:1:] == '4':
+            link = d.entries[entry].link
+            if link not in stocks_sent:
+                scrape_xml(link)
+                stocks_sent.append(link)
+        else:
+            pass
+##    except Exception as e:
+##        print (e)
+##        print (datetime.datetime.today())
+##        pass
 
 def check_price():
     for stock, price in zip(portfolio, bought_price):
@@ -211,24 +211,24 @@ def check_price():
                 smtpObj = smtplib.SMTP('smtp.gmail.com', 587)
                 smtpObj.ehlo()
                 smtpObj.starttls()
-                smtpObj.login('************', '************')
-                print(smtpObj.sendmail('************@gmail.com',\
-                                 '************@gmail.com',\
+                smtpObj.login('***********@gmail.com', '***********')
+                print(smtpObj.sendmail('***********@gmail.com',\
+                                 '***********@gmail.com',\
                                  'Subject: ' + str(today) + ' | Stock to sell after 2% gains: ' + str(ticker) + '.\nSell this stock' + '\n'))
                 smtpObj.quit()
             #Text me
-                accountSID = '************'
-                authToken = '************'
+                accountSID = '***********'
+                authToken = '***********'
                 twilioCli = TwilioRestClient(accountSID, authToken)
-                myTwilioNumber = '************'
-                myCellPhone = '************'
+                myTwilioNumber = '+13607270127'
+                myCellPhone = '+13605626329'
                 message = twilioCli.messages.create(body='Yo, sell this stock (2% gain): ' + str(ticker), from_=myTwilioNumber, to=myCellPhone)
             #Text Scott
-                accountSID = '************'
-                authToken = '************'
+                accountSID = '***********'
+                authToken = '***********'
                 twilioCli = TwilioRestClient(accountSID, authToken)
-                myTwilioNumber = '************'
-                myCellPhone = '************'
+                myTwilioNumber = '***********'
+                myCellPhone = '***********'
                 message = twilioCli.messages.create(body='Yo, sell this stock (2% gain): ' + str(ticker), from_=myTwilioNumber, to=myCellPhone)
                 portfolio.remove(stock)
                 bought_price.remove(price)
@@ -257,24 +257,24 @@ def check_price():
                 smtpObj = smtplib.SMTP('smtp.gmail.com', 587)
                 smtpObj.ehlo()
                 smtpObj.starttls()
-                smtpObj.login('************@gmail.com', '************')
-                print(smtpObj.sendmail('************@gmail.com',\
-                                 '************@gmail.com',\
+                smtpObj.login('***********@gmail.com', '***********')
+                print(smtpObj.sendmail('***********@gmail.com',\
+                                 '***********@gmail.com',\
                                  'Subject: ' + str(today) + ' | Stock to sell after 5% losses: ' + str(ticker) + '.\nSell this stock' + '\n'))
                 smtpObj.quit()
             #Text me
-                accountSID = '************'
-                authToken = '************'
+                accountSID = '***********'
+                authToken = '***********'
                 twilioCli = TwilioRestClient(accountSID, authToken)
-                myTwilioNumber = '************'
-                myCellPhone = '************'
+                myTwilioNumber = '***********'
+                myCellPhone = '***********'
                 message = twilioCli.messages.create(body='Yo, sell this stock (5% loss): ' + str(ticker), from_=myTwilioNumber, to=myCellPhone)
             #Text Scott
-                accountSID = '************'
-                authToken = '************'
+                accountSID = '***********'
+                authToken = '***********'
                 twilioCli = TwilioRestClient(accountSID, authToken)
-                myTwilioNumber = '************'
-                myCellPhone = '************'
+                myTwilioNumber = '***********'
+                myCellPhone = '***********'
                 message = twilioCli.messages.create(body='Yo, sell this stock (5% loss): ' + str(ticker), from_=myTwilioNumber, to=myCellPhone)
             #Remove from portfolio
                 portfolio.remove(stock)
